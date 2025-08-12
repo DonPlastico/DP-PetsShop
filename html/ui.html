@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Shop</title>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="main.css">
+</head>
+
+<body>
+    <!-- Menú Principal -->
+    <div class="main-menu" style="display: none;">
+        <div class="header">
+            <h1><i class="fas fa-paw"></i> Pet Shop</h1>
+            <button class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="pet-categories">
+            <div class="category-card" onclick="box1()">
+                <div class="category-content">
+                    <h2>PERROS</h2>
+                    <p>Compañeros leales que te darán amor incondicional</p>
+                    <div class="stock">10 disponibles</div>
+                </div>
+                <div class="category-image dog-bg"></div>
+                <button class="view-btn">VER MASCOTAS <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <div class="category-card" onclick="box2()">
+                <div class="category-content">
+                    <h2>GATOS</h2>
+                    <p>Amigos elegantes e independientes para tu hogar</p>
+                    <div class="stock">8 disponibles</div>
+                </div>
+                <div class="category-image others-bg"></div>
+                <button class="view-btn">VER MASCOTAS <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Mascotas -->
+    <div class="pets-list" style="display: none;">
+        <div class="header">
+            <button class="back-btn" onclick="back()"><i class="fas fa-arrow-left"></i> ATRÁS</button>
+            <h1 id="category-title">PERROS</h1>
+        </div>
+
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Buscar mascota...">
+        </div>
+
+        <div class="pets-container" id="kutucuk">
+            <!-- Las mascotas se agregarán dinámicamente aquí -->
+        </div>
+    </div>
+
+    <!-- Vista de Compra -->
+    <div class="purchase-view">
+        <div class="pet-display">
+            <div class="pet-details">
+                <h2 id="pet-name">Nombre Mascota</h2>
+                <div class="price-tag">$<span id="pet-price">3,500</span></div>
+                <div class="pet-description">
+                    <p><i class="fas fa-info-circle"></i> Esta mascota es perfecta para familias y requiere cuidados
+                        moderados.</p>
+                    <p><i class="fas fa-heart"></i> Esperanza de vida: 12-15 años</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="purchase-actions">
+            <input type="text" id="pet-name-input" placeholder="Nombre para tu mascota" maxlength="20">
+            <button class="buy-btn">COMPRAR <i class="fas fa-shopping-cart"></i></button>
+            <button class="cancel-btn">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Menú de Mascota -->
+    <div class="pet-menu">
+        <div class="pet-menu-header">
+            <h2><i class="fas fa-cog"></i> CONTROLES DE MASCOTA</h2>
+            <button class="close-pet-menu"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="pet-options">
+            <div class="pet-option" onclick="spawnpet()">
+                <i class="fas fa-dog"></i>
+                <span>Generar/Eliminar Mascota</span>
+            </div>
+            <div class="pet-option" onclick="vehicle()">
+                <i class="fas fa-car"></i>
+                <span>Entrar/Salir del Vehículo</span>
+            </div>
+            <div class="pet-option" onclick="sit()">
+                <i class="fas fa-chair"></i>
+                <span>Sentar/Levantar Mascota</span>
+            </div>
+            <div class="pet-option" onclick="sleep()">
+                <i class="fas fa-bed"></i>
+                <span>Dormir/Despertar Mascota</span>
+            </div>
+            <div class="pet-option delete-option" onclick="deletela()">
+                <i class="fas fa-trash-alt"></i>
+                <span>Eliminar Mascota Permanentemente</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+    <script src="js.js"></script>
+</body>
+
+</html>

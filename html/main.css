@@ -1,0 +1,545 @@
+:root {
+    --primary-color: rgba(255, 255, 255, 1);
+    --secondary-color: rgba(255, 255, 255, 0.8);
+    --bg-color: rgba(0, 0, 0, 0.9);
+    --hover-color: rgba(255, 255, 255, 0.2);
+    --hover2-color: rgba(255, 0, 0, 0.1);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-radius: 8px;
+    --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    --transition: all 0.3s ease;
+}
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    position: absolute;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    user-select: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: transparent !important;
+    top: 0;
+    left: 0;
+    overflow: visible !important;
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+
+/* Menú Principal */
+.main-menu,
+.pets-list,
+.purchase-view,
+.pet-menu {
+    display: none;
+    position: absolute;
+    width: 80vw;
+    max-width: 900px;
+    height: 80vh;
+    max-height: 700px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+    flex-direction: column;
+    z-index: 100;
+}
+
+.main-menu {
+    display: none;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.close-btn,
+.back-btn,
+.close-pet-menu {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.close-btn:hover,
+.back-btn:hover,
+.close-pet-menu:hover {
+    transform: scale(1.1);
+    color: var(--secondary-color);
+}
+
+.pet-categories {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    flex: 1;
+}
+
+.category-card {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    transition: var(--transition);
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: var(--hover-color);
+}
+
+.category-content {
+    padding: 20px;
+    z-index: 2;
+}
+
+.category-content h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.category-content p {
+    color: var(--secondary-color);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.stock {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    display: inline-block;
+}
+
+.category-image {
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.dog-bg {
+    background-image: url('./img/dog-1.png');
+}
+
+.others-bg {
+    background-image: url('./img/cat1.png');
+}
+
+.view-btn {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.view-btn:hover {
+    background: var(--secondary-color);
+}
+
+.featured-pets {
+    padding: 0 20px 20px;
+}
+
+.featured-pets h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.featured-slider {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.pet-card {
+    min-width: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+    border: 1px solid var(--border-color);
+}
+
+.pet-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    background: var(--hover-color);
+}
+
+.pet-image {
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+}
+
+.pet-card h4 {
+    padding: 10px;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+}
+
+.pet-card .price {
+    display: block;
+    padding: 0 10px 10px;
+    color: var(--secondary-color);
+    font-weight: 600;
+}
+
+/* Lista de Mascotas */
+.pets-list .header {
+    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
+    border-bottom: 1px solid var(--border-color);
+}
+
+.search-box {
+    padding: 15px 20px;
+    position: relative;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-color);
+    border-radius: 50px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: var(--transition);
+}
+
+.search-box input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.search-box i {
+    position: absolute;
+    left: 35px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-color);
+}
+
+.pets-container {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+}
+
+/* Items de mascotas dinámicos */
+.item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+}
+
+.item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    background: var(--hover-color);
+}
+
+.item-text {
+    padding: 10px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+.item-img {
+    height: 120px;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.prew-but {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 8px;
+    margin: 10px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.prew-but:hover {
+    background: var(--secondary-color);
+}
+
+/* Vista de Compra */
+.purchase-view {
+    background: var(--bg-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.pet-display {
+    display: flex;
+    height: 70%;
+    padding: 20px;
+    gap: 20px;
+}
+
+.pet-large-image {
+    flex: 1;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+}
+
+.pet-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.pet-details h2 {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+}
+
+.price-tag {
+    font-size: 1.8rem;
+    color: var(--secondary-color);
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.pet-description {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+}
+
+.pet-description p {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pet-description i {
+    color: var(--primary-color);
+}
+
+.purchase-actions {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#pet-name-input {
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    outline: none;
+    transition: var(--transition);
+}
+
+#pet-name-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.buy-btn {
+    background: var(--primary-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.buy-btn:hover {
+    background: var(--secondary-color);
+}
+
+.cancel-btn {
+    background: var(--hover2-color);
+    color: var(--primary-color);
+    border: 1px solid rgba(255, 0, 0, 0.5);
+    padding: 12px;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 0, 0, 0.2);
+}
+
+/* Menú de Mascota */
+.pet-menu {
+    width: 400px;
+    max-width: 90%;
+    height: auto;
+    max-height: 90%;
+}
+
+.pet-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
+    color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pet-menu-header h2 {
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pet-options {
+    padding: 20px;
+    background: var(--bg-color);
+}
+
+.pet-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--border-radius);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: var(--transition);
+    gap: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.pet-option:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    background: var(--hover-color);
+}
+
+.pet-option i {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    width: 25px;
+    text-align: center;
+}
+
+.pet-option span {
+    flex: 1;
+    color: var(--primary-color);
+}
+
+.delete-option {
+    border-left: 4px solid var(--hover2-color);
+}
+
+.delete-option i {
+    color: rgba(255, 0, 0, 0.5);
+}
