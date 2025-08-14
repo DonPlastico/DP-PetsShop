@@ -364,11 +364,11 @@ body {
     border-radius: 5px 0 0 5px;
     box-shadow: 0 0 .8vh black;
     font-family: 'Arial', sans-serif;
-    top: 50%;
+    top: 51%;
     transform: translateY(-50%);
     right: 0;
     height: auto;
-    width: 30%;
+    width: 26%;
     flex-direction: column;
     transform-origin: right center;
     box-sizing: border-box;
@@ -513,7 +513,7 @@ body {
     justify-content: center;
     color: var(--secondary-color);
     padding: 0 0 0 5px;
-    margin: 312px 0;
+    margin: 317px 0;
 }
 
 .zoom-instructions p,

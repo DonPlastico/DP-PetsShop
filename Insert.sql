@@ -15,8 +15,15 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 CREATE TABLE IF NOT EXISTS `dp_petshop` (
-  `identifier` varchar(50) DEFAULT NULL,
-  `pet_code` varchar(50) DEFAULT NULL
+  `identifier` varchar(50) NOT NULL,
+  `pet_code` varchar(50) DEFAULT NULL,
+  `health` int(11) DEFAULT 100,
+  `hunger` int(11) DEFAULT 100,
+  `thirst` int(11) DEFAULT 100,
+  `hygiene` int(11) DEFAULT 100,
+  `affection` int(11) DEFAULT 100,
+  `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

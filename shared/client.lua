@@ -9,6 +9,31 @@ local bindimi = true
 local cam = nil
 local b = nil
 local zoomLevel = 0.0 -- Variable para controlar el nivel de zoom
+local petStats = {
+    health = 100,
+    hunger = 100,
+    thirst = 100,
+    hygiene = 100,
+    affection = 100
+}
+local lastHygieneDecrease = 0
+local lastAffectionDecrease = 0
+
+local function MostrarTextoUI(id, texto, tecla, mantener)
+    if Config.DPTextUI and exports['DP-TextUI'] then
+        exports['DP-TextUI']:MostrarUI(id, texto, 'E', mantener or false)
+    end
+end
+
+local function OcultarTextoUI(id)
+    if Config.DPTextUI and exports['DP-TextUI'] then
+        if id then
+            exports['DP-TextUI']:OcultarUI(id)
+        else
+            exports['DP-TextUI']:OcultarUI()
+        end
+    end
+end
 
 -- Creación del NPC
 Citizen.CreateThread(function()
@@ -30,6 +55,7 @@ end)
 
 -- Interacción con la tienda de mascotas
 Citizen.CreateThread(function()
+    local textoMostrado = false -- Variable de control
     while true do
         local espera = 1500
         local coordsJugador = GetEntityCoords(PlayerPedId())
@@ -38,14 +64,36 @@ Citizen.CreateThread(function()
         if distancia < Config.sleepdistance then
             espera = 1
             if distancia < Config.textdistance then
-                DibujarTexto3D(Config.npccoord.x, Config.npccoord.y, Config.npccoord.z + 0.0, Config.text)
+                if not textoMostrado then -- Solo mostrar si no estaba mostrado
+                    if Config.DPTextUI then
+                        MostrarTextoUI('tienda_mascotas', Config.text, Config.controlkeys, false)
+                    else
+                        DibujarTexto3D(Config.npccoord.x, Config.npccoord.y, Config.npccoord.z + 0.0, Config.text)
+                    end
+                    textoMostrado = true
+                end
+
                 if distancia < Config.controldistance and IsControlJustReleased(0, Config.controlkeys) then
                     SendNUIMessage({
                         action = "openmenu"
                     })
                     SetNuiFocus(true, true)
+                    if Config.DPTextUI then
+                        OcultarTextoUI('tienda_mascotas')
+                    end
+                    textoMostrado = false -- Resetear para que se vuelva a mostrar al cerrar el menú
                 end
+            elseif textoMostrado then
+                if Config.DPTextUI then
+                    OcultarTextoUI('tienda_mascotas')
+                end
+                textoMostrado = false
             end
+        elseif textoMostrado then
+            if Config.DPTextUI then
+                OcultarTextoUI('tienda_mascotas')
+            end
+            textoMostrado = false
         end
         Citizen.Wait(espera)
     end
@@ -54,7 +102,46 @@ end)
 -- Callbacks de NUI
 RegisterNUICallback("closenui", function()
     SetNuiFocus(false, false)
+    if not Config.DPTextUI then
+        return
+    end
+
+    -- Volver a mostrar el texto si el jugador sigue cerca
+    local distancia = #(GetEntityCoords(PlayerPedId()) - Config.npccoord)
+    if distancia < Config.textdistance then
+        textoMostrado = false -- Permitir que se muestre de nuevo en el bucle principal
+    end
 end)
+
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() then
+        OcultarTextoUI()
+        if spawned_ped then
+            savePetStats()
+        end
+    end
+end)
+
+function DibujarTexto3D(x, y, z, texto)
+    if Config.DPTextUI then
+        return
+    end
+
+    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    local px, py, pz = table.unpack(GetGameplayCamCoords())
+
+    SetTextScale(0.35, 0.35)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextColour(255, 255, 255, 215)
+
+    SetTextEntry("STRING")
+    SetTextCentre(1)
+    AddTextComponentString(texto)
+    DrawText(_x, _y)
+    local factor = (string.len(texto)) / 370
+    DrawRect(_x, _y + 0.0125, 0.015 + factor, 0.03, 41, 11, 41, 68)
+end
 
 RegisterNUICallback("spawnpet", function()
     if not pcode then
@@ -79,9 +166,39 @@ RegisterNUICallback("showpet", function(data)
     RenderScriptCams(true, true, 500)
     zoomLevel = 0.0 -- Reiniciar el zoom al abrir la vista de compra
 
-    for k, v in pairs(Config.items) do
+    for k, v in pairs(Config.pets.dogs) do
         if id == k then
-            -- Enviar el nombre y precio a la UI
+            SendNUIMessage({
+                action = "updatepetname",
+                name = v.name,
+                price = v.price
+            })
+
+            RequestModel(v.pet_code)
+            while not HasModelLoaded(v.pet_code) do
+                Citizen.Wait(1)
+            end
+
+            if DoesEntityExist(b) then
+                DeleteEntity(b)
+            end
+
+            b = CreatePed(4, v.pet_code, Config.shop.pedspawn.x, Config.shop.pedspawn.y, Config.shop.pedspawn.z,
+                Config.shop.pedspawn_h, false, false)
+            SetPedFleeAttributes(b, 0, 0)
+            SetPedDropsWeaponsWhenDead(b, false)
+            SetPedDiesWhenInjured(b, false)
+            SetEntityInvincible(b, true)
+            FreezeEntityPosition(b, true)
+            SetBlockingOfNonTemporaryEvents(b, true)
+
+            precio = v.price
+            petcode = v.pet_code
+        end
+    end
+
+    for k, v in pairs(Config.pets.others) do
+        if id == k + 100 then -- IDs diferentes para otros animales
             SendNUIMessage({
                 action = "updatepetname",
                 name = v.name,
@@ -141,8 +258,8 @@ RegisterNUICallback("zoompet", function(data)
         local zoomStep = 0.2 -- Ajusta la velocidad del zoom
 
         -- Limitar el zoom para evitar que la cámara se aleje o se acerque demasiado
-        local minZoom = -2.0
-        local maxZoom = 2.0
+        local minZoom = -0.5
+        local maxZoom = 0.5
         local newZoomLevel = zoomLevel + direction * zoomStep
 
         if newZoomLevel >= minZoom and newZoomLevel <= maxZoom then
@@ -350,70 +467,252 @@ RegisterCommand(Config.openmenu, function()
     TriggerServerEvent("pet:control")
 end)
 
+-- Control por tecla si está configurado
+if Config.key then
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(0)
+            if IsControlJustReleased(0, GetKey(Config.key)) then
+                TriggerServerEvent("pet:control")
+            end
+        end
+    end)
+end
+
+-- Función para convertir la tecla de string a código de control
+function GetKey(key)
+    local keys = {
+        ["A"] = 34,
+        ["B"] = 29,
+        ["C"] = 26,
+        ["D"] = 30,
+        ["E"] = 46,
+        ["F"] = 49,
+        ["G"] = 47,
+        ["H"] = 74,
+        ["I"] = 0,
+        ["J"] = 0,
+        ["K"] = 0,
+        ["L"] = 0,
+        ["M"] = 0,
+        ["N"] = 249,
+        ["O"] = 0,
+        ["P"] = 0,
+        ["Q"] = 44,
+        ["R"] = 45,
+        ["S"] = 33,
+        ["T"] = 0,
+        ["U"] = 0,
+        ["V"] = 0,
+        ["W"] = 32,
+        ["X"] = 0,
+        ["Y"] = 246,
+        ["Z"] = 20,
+        ["F1"] = 288,
+        ["F2"] = 289,
+        ["F3"] = 170,
+        ["F4"] = 0,
+        ["F5"] = 166,
+        ["F6"] = 167,
+        ["F7"] = 168,
+        ["F9"] = 56,
+        ["F10"] = 57,
+        ["F11"] = 58,
+        ["F12"] = 59
+    }
+    return keys[string.upper(key)] or nil
+end
+
 -- Menú del petmenu
-RegisterNetEvent("pet:cl:control", function(var, petcodee)
+RegisterNetEvent("pet:cl:control", function(var, petData)
     if var then
-        pcode = petcodee
+        -- Si petData es nil, usa los valores actuales de pcode y petStats
+        if petData then
+            pcode = petData.pet_code
+            if petData.health then
+                petStats.health = petData.health
+            end
+            if petData.hunger then
+                petStats.hunger = petData.hunger
+            end
+            if petData.thirst then
+                petStats.thirst = petData.thirst
+            end
+            if petData.hygiene then
+                petStats.hygiene = petData.hygiene
+            end
+            if petData.affection then
+                petStats.affection = petData.affection
+            end
+        end
+
         local menuItems = {{
-            header = "ESTADO DE TU MASCOTA",
+            header = "MENÚ DE MASCOTA",
             isMenuHeader = true
-        }, {
-            header = "Salud: 0%",
-            txt = "Estado físico general de tu mascota",
-            icon = "fa-solid fa-heart-pulse",
-            disabled = true
-        }, {
-            header = "Hambre: 0%",
-            txt = "Nivel de alimentación de tu mascota",
-            icon = "fa-solid fa-bowl-food",
-            disabled = true
-        }, {
-            header = "Sed: 0%",
-            txt = "Nivel de hidratación de tu mascota",
-            icon = "fa-solid fa-droplet",
-            disabled = true
-        }, {
-            header = "Higiene: 0%",
-            txt = "Limpieza y cuidado de tu mascota",
-            icon = "fa-solid fa-bath",
-            disabled = true
-        }, {
-            header = "Cariño: 0%",
-            txt = "Nivel de afecto y atención recibida",
-            icon = "fa-solid fa-hand-holding-heart",
-            disabled = true
-        }, {
+        }}
+
+        -- Agregar estadísticas si están habilitadas y cuidados también está habilitado
+        if Config.menus.estadisticas and Config.menus.cuidados then
+            table.insert(menuItems, {
+                header = "ESTADO DE TU MASCOTA",
+                isMenuHeader = true
+            })
+            table.insert(menuItems, {
+                header = "Salud: " .. petStats.health .. "%",
+                txt = "Estado físico general de tu mascota",
+                icon = "fa-solid fa-heart-pulse",
+                disabled = true
+            })
+            table.insert(menuItems, {
+                header = "Hambre: " .. petStats.hunger .. "%",
+                txt = "Nivel de alimentación de tu mascota",
+                icon = "fa-solid fa-bowl-food",
+                disabled = true
+            })
+            table.insert(menuItems, {
+                header = "Sed: " .. petStats.thirst .. "%",
+                txt = "Nivel de hidratación de tu mascota",
+                icon = "fa-solid fa-droplet",
+                disabled = true
+            })
+            table.insert(menuItems, {
+                header = "Higiene: " .. petStats.hygiene .. "%",
+                txt = "Limpieza y cuidado de tu mascota",
+                icon = "fa-solid fa-bath",
+                disabled = true
+            })
+            table.insert(menuItems, {
+                header = "Cariño: " .. petStats.affection .. "%",
+                txt = "Nivel de afecto y atención recibida",
+                icon = "fa-solid fa-hand-holding-heart",
+                disabled = true
+            })
+        end
+
+        -- Menú de interacción (siempre visible)
+        table.insert(menuItems, {
             header = "INTERACCIÓN",
             txt = "Acciones básicas con tu mascota",
             icon = "fa-solid fa-paw",
             params = {
                 event = "dp-pets:openInteractionMenu"
             }
-        }, {
-            header = "CUIDADOS",
-            txt = "Atender las necesidades de tu mascota",
-            icon = "fa-solid fa-hand-holding-medical",
-            params = {
-                event = "dp-pets:openCareMenu"
-            }
-        }, {
-            header = "LIBERAR MASCOTA",
-            txt = "Dejar marchar a tu mascota permanentemente",
-            icon = "fa-solid fa-heart-crack",
-            params = {
-                event = "dp-pets:openReleaseMenu"
-            }
-        }, {
+        })
+
+        -- Menú de cuidados si está habilitado
+        if Config.menus.cuidados then
+            table.insert(menuItems, {
+                header = "CUIDADOS",
+                txt = "Atender las necesidades de tu mascota",
+                icon = "fa-solid fa-hand-holding-medical",
+                params = {
+                    event = "dp-pets:openCareMenu"
+                }
+            })
+        end
+
+        -- Opción de liberar si está habilitada
+        if Config.menus.liberar then
+            table.insert(menuItems, {
+                header = "LIBERAR MASCOTA",
+                txt = "Dejar marchar a tu mascota permanentemente",
+                icon = "fa-solid fa-heart-crack",
+                params = {
+                    event = "dp-pets:openReleaseMenu"
+                }
+            })
+        end
+
+        -- Cerrar menú (siempre visible)
+        table.insert(menuItems, {
             header = "CERRAR MENÚ",
             icon = "fa-solid fa-xmark",
             params = {
                 event = "qb-menu:closeMenu"
             }
-        }}
+        })
 
         exports['qb-menu']:openMenu(menuItems)
     else
         notificar("No tienes una mascota", 'error')
+    end
+end)
+
+-- Función para guardar las estadísticas en el servidor
+local function savePetStats()
+    TriggerServerEvent("dp-pets:updateStats", petStats)
+end
+
+-- Función para disminuir necesidades de la mascota
+function decreasePetNeeds()
+    if spawned_ped and DoesEntityExist(spawned_ped) then
+        local currentTime = GetGameTimer()
+
+        -- Disminuir hambre y sed según configuración
+        local randomDecreaseHunger = math.random(Config.needsDecrease.hunger.min, Config.needsDecrease.hunger.max)
+        local randomDecreaseThirst = math.random(Config.needsDecrease.thirst.min, Config.needsDecrease.thirst.max)
+
+        petStats.hunger = math.max(0, petStats.hunger - randomDecreaseHunger)
+        petStats.thirst = math.max(0, petStats.thirst - randomDecreaseThirst)
+
+        -- Disminuir higiene según configuración
+        if currentTime - lastHygieneDecrease >= (Config.needsDecrease.hygiene.interval * 60 * 1000) then
+            petStats.hygiene = math.max(0, petStats.hygiene - Config.needsDecrease.hygiene.amount)
+            lastHygieneDecrease = currentTime
+
+            -- Notificación si la higiene es crítica
+            if petStats.hygiene <= Config.lowNeedThresholds.hygiene then
+                notificar("¡Tu mascota está sucia (" .. petStats.hygiene .. "%)! Báñala.", 'error')
+            end
+        end
+
+        -- Disminuir afecto según configuración
+        if currentTime - lastAffectionDecrease >= (Config.needsDecrease.affection.interval * 60 * 1000) then
+            petStats.affection = math.max(0, petStats.affection - Config.needsDecrease.affection.amount)
+            lastAffectionDecrease = currentTime
+
+            -- Notificación si el afecto es crítico
+            if petStats.affection <= Config.lowNeedThresholds.affection then
+                notificar("¡Tu mascota se siente ignorada (" .. petStats.affection .. "%)!", 'error')
+            end
+        end
+
+        -- Notificaciones para hambre y sed
+        if petStats.hunger <= Config.lowNeedThresholds.hunger then
+            notificar("¡Tu mascota tiene hambre (" .. petStats.hunger .. "%)!", 'error')
+        end
+        if petStats.thirst <= Config.lowNeedThresholds.thirst then
+            notificar("¡Tu mascota tiene sed (" .. petStats.thirst .. "%)!", 'error')
+        end
+
+        -- Si hambre o sed llegan a 0, reducir salud según configuración
+        if petStats.hunger <= 0 or petStats.thirst <= 0 then
+            petStats.health = math.max(0, petStats.health - Config.needsDecrease.health.amount)
+            if petStats.health <= Config.lowNeedThresholds.health then
+                notificar("¡Tu mascota está en peligro! Salud: " .. petStats.health .. "%", 'error')
+            end
+        end
+
+        -- Muerte por salud <= 0
+        if petStats.health <= 0 then
+            notificar("¡Tu mascota ha muerto por falta de cuidados!", 'error')
+            DeleteEntity(spawned_ped)
+            spawned_ped = nil
+            TriggerServerEvent("delete:pet")
+        end
+
+        -- Guardar cambios en el servidor
+        savePetStats()
+    end
+end
+
+-- Modificar el hilo que llama a decreasePetNeeds para que se ejecute cada minuto
+Citizen.CreateThread(function()
+    while true do
+        if spawned_ped and DoesEntityExist(spawned_ped) then
+            decreasePetNeeds()
+        end
+        Citizen.Wait(15000) -- Verificar cada minuto (60000 ms)
     end
 end)
 
@@ -422,77 +721,240 @@ RegisterNetEvent('dp-pets:openInteractionMenu', function()
     local menuItems = {{
         header = "INTERACCIÓN CON MASCOTA",
         isMenuHeader = true
-    }, {
-        header = "Traer/Devolver mascota",
-        icon = "fa-solid fa-house",
-        params = {
-            event = "dp-pets:spawnPet"
-        }
-    }, {
-        header = "Meter/Sacar del Vehículo",
-        icon = "fa-solid fa-car",
-        params = {
-            event = "dp-pets:vehiclePet"
-        }
-    }, {
-        header = "Sentar/Levantar Mascota",
-        icon = "fa-solid fa-chair",
-        params = {
-            event = "dp-pets:sitPet"
-        }
-    }, {
-        header = "Dormir/Despertar Mascota",
-        icon = "fa-solid fa-moon",
-        params = {
-            event = "dp-pets:sleepPet"
-        }
-    }, {
+    }}
+
+    -- Verificar si la mascota está spawneda
+    local isPetSpawned = spawned_ped and DoesEntityExist(spawned_ped)
+
+    -- Opciones de llamar/mandar a casa (mutuamente excluyentes)
+    if not isPetSpawned then
+        table.insert(menuItems, {
+            header = "Llamar mascota",
+            icon = "fa-solid fa-bell",
+            params = {
+                event = "dp-pets:callPet"
+            }
+        })
+    else
+        table.insert(menuItems, {
+            header = "Mandar a casa",
+            icon = "fa-solid fa-house",
+            params = {
+                event = "dp-pets:sendHome"
+            }
+        })
+
+        -- Verificar si está en un vehículo
+        local isInVehicle = IsEntityAttachedToAnyVehicle(spawned_ped)
+
+        -- Verificar si está sentada
+        local isSitting = IsEntityPlayingAnim(spawned_ped, "creatures@rottweiler@amb@world_dog_sitting@base", "base", 3)
+
+        -- Verificar si está durmiendo
+        local isSleeping = IsEntityPlayingAnim(spawned_ped, "creatures@rottweiler@amb@sleep_in_kennel@",
+            "sleep_in_kennel", 3)
+
+        -- Opciones de vehículo
+        if not isInVehicle then
+            table.insert(menuItems, {
+                header = "Meter al vehículo",
+                icon = "fa-solid fa-car-side",
+                params = {
+                    event = "dp-pets:putInVehicle"
+                }
+            })
+        else
+            table.insert(menuItems, {
+                header = "Sacar del vehículo",
+                icon = "fa-solid fa-person-walking",
+                params = {
+                    event = "dp-pets:takeOutVehicle"
+                }
+            })
+        end
+
+        -- Opciones de sentar/levantar
+        if not isSitting then
+            table.insert(menuItems, {
+                header = "Sentar mascota",
+                icon = "fa-solid fa-couch",
+                params = {
+                    event = "dp-pets:sitPet"
+                }
+            })
+        else
+            table.insert(menuItems, {
+                header = "Levantar mascota",
+                icon = "fa-solid fa-person-walking",
+                params = {
+                    event = "dp-pets:standPet"
+                }
+            })
+        end
+
+        -- Opciones de dormir/despertar
+        if not isSleeping then
+            table.insert(menuItems, {
+                header = "Dormir mascota",
+                icon = "fa-solid fa-moon",
+                params = {
+                    event = "dp-pets:sleepPet"
+                }
+            })
+        else
+            table.insert(menuItems, {
+                header = "Despertar mascota",
+                icon = "fa-solid fa-sun",
+                params = {
+                    event = "dp-pets:wakePet"
+                }
+            })
+        end
+    end
+
+    -- Opción para volver
+    table.insert(menuItems, {
         header = "Volver al menú principal",
         icon = "fa-solid fa-arrow-left",
         params = {
             event = "pet:cl:control",
-            args = {true, pcode}
+            args = {true, {
+                pet_code = pcode,
+                health = petStats.health,
+                hunger = petStats.hunger,
+                thirst = petStats.thirst,
+                hygiene = petStats.hygiene,
+                affection = petStats.affection
+            }}
         }
-    }}
+    })
 
     exports['qb-menu']:openMenu(menuItems)
 end)
 
+-- Nuevos eventos para las acciones específicas
+RegisterNetEvent('dp-pets:callPet', function()
+    if not pcode then
+        notificar("No has seleccionado una mascota", 'error')
+        return
+    end
+    spawnMascota(pcode)
+end)
+
+RegisterNetEvent('dp-pets:sendHome', function()
+    if spawned_ped and DoesEntityExist(spawned_ped) then
+        DeleteEntity(spawned_ped)
+        spawned_ped = nil
+        notificar("Mascota enviada a casa", 'primary')
+    else
+        notificar("No tienes una mascota activa", 'error')
+    end
+end)
+
+RegisterNetEvent('dp-pets:putInVehicle', function()
+    if spawned_ped then
+        entrarVehiculo()
+    else
+        notificar("No tienes una mascota activa", 'error')
+    end
+end)
+
+RegisterNetEvent('dp-pets:takeOutVehicle', function()
+    if spawned_ped then
+        entrarVehiculo() -- La misma función maneja meter y sacar
+    else
+        notificar("No tienes una mascota activa", 'error')
+    end
+end)
+
+RegisterNetEvent('dp-pets:standPet', function()
+    if spawned_ped then
+        sentar(spawned_ped) -- La misma función maneja sentar y levantar
+    else
+        notificar("No tienes una mascota activa", 'error')
+    end
+end)
+
+RegisterNetEvent('dp-pets:wakePet', function()
+    if spawned_ped then
+        acostar(spawned_ped) -- La misma función maneja dormir y despertar
+    else
+        notificar("No tienes una mascota activa", 'error')
+    end
+end)
+
 -- Menú de Cuidados
 RegisterNetEvent('dp-pets:openCareMenu', function()
+    if not Config.menus.cuidados then
+        return
+    end
+
+    local isPetPresent = spawned_ped and DoesEntityExist(spawned_ped)
+
     local menuItems = {{
         header = "CUIDAR A TU MASCOTA",
         isMenuHeader = true
     }, {
-        header = "Alimentar",
-        icon = "fa-solid fa-bone",
+        header = "Curar",
+        txt = isPetPresent and "Requiere: " .. Config.petItems.medkit.label or "¡La mascota debe estar contigo!",
+        icon = "fa-solid fa-briefcase-medical",
+        disabled = not isPetPresent,
         params = {
-            event = "dp-pets:feedPet"
+            event = isPetPresent and "dp-pets:healthPet" or nil
+        }
+    }, {
+        header = "Alimentar",
+        txt = isPetPresent and "Requiere: " .. Config.petItems.food.label or "¡La mascota debe estar contigo!",
+        icon = "fa-solid fa-bone",
+        disabled = not isPetPresent,
+        params = {
+            event = isPetPresent and "dp-pets:feedPet" or nil
         }
     }, {
         header = "Hidratar",
+        txt = isPetPresent and "Requiere: " .. Config.petItems.water.label or "¡La mascota debe estar contigo!",
         icon = "fa-solid fa-bottle-water",
+        disabled = not isPetPresent,
         params = {
-            event = "dp-pets:hydratePet"
+            event = isPetPresent and "dp-pets:hydratePet" or nil
         }
     }, {
-        header = "Bañar/Lavar",
+        header = "Limpiar",
+        txt = isPetPresent and "Requiere: " .. Config.petItems.towel.label or "¡La mascota debe estar contigo!",
         icon = "fa-solid fa-shower",
+        disabled = not isPetPresent,
         params = {
-            event = "dp-pets:cleanPet"
+            event = isPetPresent and "dp-pets:cleanPet" or nil
         }
     }, {
         header = "Acariciar",
+        txt = isPetPresent and "No requiere items" or "¡La mascota debe estar contigo!",
         icon = "fa-solid fa-hand",
+        disabled = not isPetPresent,
         params = {
-            event = "dp-pets:petPet"
+            event = isPetPresent and "dp-pets:petPet" or nil
+        }
+    }, {
+        header = "Dar premio",
+        txt = isPetPresent and "Requiere: " .. Config.petItems.treats.label or "¡La mascota debe estar contigo!",
+        icon = "fa-solid fa-gift",
+        disabled = not isPetPresent,
+        params = {
+            event = isPetPresent and "dp-pets:giveTreat" or nil
         }
     }, {
         header = "Volver al menú principal",
         icon = "fa-solid fa-arrow-left",
         params = {
             event = "pet:cl:control",
-            args = {true, pcode}
+            args = {true, {
+                pet_code = pcode,
+                health = petStats.health,
+                hunger = petStats.hunger,
+                thirst = petStats.thirst,
+                hygiene = petStats.hygiene,
+                affection = petStats.affection
+            }}
         }
     }}
 
@@ -501,6 +963,10 @@ end)
 
 -- Menú de Liberación
 RegisterNetEvent('dp-pets:openReleaseMenu', function()
+    if not Config.menus.liberar then
+        return
+    end
+
     local menuItems = {{
         header = "¿LIBERAR MASCOTA?",
         txt = "¿Estás seguro de querer dejar marchar a tu mascota? Esta acción es permanente.",
@@ -524,25 +990,106 @@ RegisterNetEvent('dp-pets:openReleaseMenu', function()
     exports['qb-menu']:openMenu(menuItems)
 end)
 
--- Eventos para las nuevas acciones (deberás implementar estas funciones)
+-- Eventos para las acciones de cuidado con items
+RegisterNetEvent('dp-pets:healthPet', function()
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes curar a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('dp-pets:useItem', function(success)
+        if success then
+            petStats.health = math.min(100, petStats.health + Config.petItems.medkit.increase.health)
+            savePetStats()
+            notificar("Has usado un " .. Config.petItems.medkit.label .. ". Salud: " .. petStats.health .. "%",
+                'success')
+        else
+            notificar("Necesitas un " .. Config.petItems.medkit.label, 'error')
+        end
+    end, Config.petItems.medkit.name)
+end)
+
 RegisterNetEvent('dp-pets:feedPet', function()
-    notificar("Has alimentado a tu mascota", 'success')
-    -- Implementar lógica de alimentación
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes alimentar a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('dp-pets:useItem', function(success)
+        if success then
+            petStats.hunger = math.min(100, petStats.hunger + Config.petItems.food.increase.hunger)
+            savePetStats()
+            notificar("Has usado " .. Config.petItems.food.label .. ". Hambre: " .. petStats.hunger .. "%", 'success')
+        else
+            notificar("Necesitas " .. Config.petItems.food.label, 'error')
+        end
+    end, Config.petItems.food.name)
 end)
 
 RegisterNetEvent('dp-pets:hydratePet', function()
-    notificar("Has dado agua a tu mascota", 'success')
-    -- Implementar lógica de hidratación
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes hidratar a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('dp-pets:useItem', function(success)
+        if success then
+            petStats.thirst = math.min(100, petStats.thirst + Config.petItems.water.increase.thirst)
+            savePetStats()
+            notificar("Has usado " .. Config.petItems.water.label .. ". Sed: " .. petStats.thirst .. "%", 'success')
+        else
+            notificar("Necesitas " .. Config.petItems.water.label, 'error')
+        end
+    end, Config.petItems.water.name)
 end)
 
 RegisterNetEvent('dp-pets:cleanPet', function()
-    notificar("Has bañado a tu mascota", 'success')
-    -- Implementar lógica de limpieza
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes limpiar a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('dp-pets:useItem', function(success)
+        if success then
+            petStats.hygiene = math.min(100, petStats.hygiene + Config.petItems.towel.increase.hygiene)
+            savePetStats()
+            notificar("Has usado una " .. Config.petItems.towel.label .. ". Higiene: " .. petStats.hygiene .. "%",
+                'success')
+        else
+            notificar("Necesitas una " .. Config.petItems.towel.label, 'error')
+        end
+    end, Config.petItems.towel.name)
 end)
 
 RegisterNetEvent('dp-pets:petPet', function()
-    notificar("Has acariciado a tu mascota", 'success')
-    -- Implementar lógica de cariño
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes acariciar a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    petStats.affection = math.min(100, petStats.affection + 10)
+    savePetStats()
+    notificar("¡Mascota contenta! Afecto: " .. petStats.affection .. "%", 'success')
+end)
+
+RegisterNetEvent('dp-pets:giveTreat', function()
+    if not spawned_ped or not DoesEntityExist(spawned_ped) then
+        notificar("No puedes dar premios a tu mascota si no está contigo", 'error')
+        return
+    end
+
+    QBCore.Functions.TriggerCallback('dp-pets:useItem', function(success)
+        if success then
+            petStats.hunger = math.min(100, petStats.hunger + Config.petItems.treats.increase.hunger)
+            petStats.affection = math.min(100, petStats.affection + Config.petItems.treats.increase.affection)
+            savePetStats()
+            notificar(
+                "Has dado " .. Config.petItems.treats.label .. ". Hambre: " .. petStats.hunger .. "%, Afecto: " ..
+                    petStats.affection .. "%", 'success')
+        else
+            notificar("Necesitas " .. Config.petItems.treats.label, 'error')
+        end
+    end, Config.petItems.treats.name)
 end)
 
 -- Mantenemos los eventos originales
@@ -583,30 +1130,26 @@ RegisterNetEvent('dp-pets:deletePet', function()
 end)
 
 RegisterNUICallback("box-menu", function()
-    for k, v in pairs(Config.items) do
-        if v.cattegory == "dog" then
-            SendNUIMessage({
-                action = "add-pet",
-                name = v.name,
-                img = v.img,
-                id = k,
-                price = v.price
-            })
-        end
+    for k, v in pairs(Config.pets.dogs) do
+        SendNUIMessage({
+            action = "add-pet",
+            name = v.name,
+            img = v.img,
+            id = k,
+            price = v.price
+        })
     end
 end)
 
 RegisterNUICallback("box-menu2", function()
-    for k, v in pairs(Config.items) do
-        if v.cattegory == "others" then
-            SendNUIMessage({
-                action = "add-pet",
-                name = v.name,
-                img = v.img,
-                id = k,
-                price = v.price
-            })
-        end
+    for k, v in pairs(Config.pets.others) do
+        SendNUIMessage({
+            action = "add-pet",
+            name = v.name,
+            img = v.img,
+            id = k + 100, -- IDs diferentes para otros animales
+            price = v.price
+        })
     end
 end)
 
@@ -634,22 +1177,4 @@ end)
 -- Función para notificar
 function notificar(texto, tipo)
     QBCore.Functions.Notify(texto, tipo or 'primary', 5000)
-end
-
--- Función para dibujar texto 3D
-function DibujarTexto3D(x, y, z, texto)
-    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
-    local px, py, pz = table.unpack(GetGameplayCamCoords())
-
-    SetTextScale(0.35, 0.35)
-    SetTextFont(4)
-    SetTextProportional(1)
-    SetTextColour(255, 255, 255, 215)
-
-    SetTextEntry("STRING")
-    SetTextCentre(1)
-    AddTextComponentString(texto)
-    DrawText(_x, _y)
-    local factor = (string.len(texto)) / 370
-    DrawRect(_x, _y + 0.0125, 0.015 + factor, 0.03, 41, 11, 41, 68)
 end

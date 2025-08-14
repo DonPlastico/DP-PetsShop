@@ -46,7 +46,7 @@
     <div class="pets-list" style="display: none;">
         <div class="header">
             <button class="back-btn" onclick="back()"><i class="fas fa-arrow-left"></i> ATRÁS</button>
-            <h1 id="category-title">PERROS</h1>
+            <h1 id="category-title"></h1>
         </div>
 
         <div class="pets-container" id="kutucuk">
@@ -55,7 +55,7 @@
 
         <div class="search-box">
             <i class="fas fa-search"></i>
-            <input type="text" placeholder="Buscar mascota...">
+            <input type="text" id="search-input" placeholder="Buscar mascota..." onkeyup="filterPets()">
         </div>
     </div>
 

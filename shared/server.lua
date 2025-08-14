@@ -74,6 +74,28 @@ function notify(source, text, type)
 end
 
 -------------------------------- 
+-- Evento para verificar y usar items
+QBCore.Functions.CreateCallback('dp-pets:useItem', function(source, cb, item)
+    local Player = QBCore.Functions.GetPlayer(source)
+    if not Player then
+        return cb(false)
+    end
+
+    local itemData = Player.Functions.GetItemByName(item)
+    if not itemData or itemData.amount <= 0 then
+        cb(false)
+        return
+    end
+
+    if Player.Functions.RemoveItem(item, 1) then
+        TriggerClientEvent('inventory:client:ItemBox', source, QBCore.Shared.Items[item], "remove")
+        cb(true)
+    else
+        cb(false)
+    end
+end)
+
+-------------------------------- 
 -- Evento de compra de mascotas
 RegisterNetEvent("buy:pet", function(petcode, price)
     local src = source
@@ -101,8 +123,8 @@ RegisterNetEvent("buy:pet", function(petcode, price)
     if money >= price then
         if removemoney(src, price) then
             ExecuteSql(
-                "INSERT INTO `dp_petshop` (`identifier`, `pet_code`) VALUES ('" .. identifier .. "','" .. petcode ..
-                    "')")
+                "INSERT INTO `dp_petshop` (`identifier`, `pet_code`, `health`, `hunger`, `thirst`, `hygiene`, `affection`) " ..
+                    "VALUES ('" .. identifier .. "','" .. petcode .. "', 100, 100, 100, 100, 100)")
             notify(src, "¡Has comprado tu nueva mascota con éxito!", 'success')
         else
             notify(src, "No se pudo procesar el pago", 'error')
@@ -110,6 +132,22 @@ RegisterNetEvent("buy:pet", function(petcode, price)
     else
         notify(src, "Hace falta dinero", 'error')
     end
+end)
+
+--------------------------------
+-- Evento para actualizar las estadísticas
+RegisterNetEvent("dp-pets:updateStats", function(stats)
+    local src = source
+    local identifier = getidentifier(src)
+
+    if not identifier then
+        return
+    end
+
+    ExecuteSql("UPDATE `dp_petshop` SET " .. "`health` = " .. (stats.health or 100) .. ", " .. "`hunger` = " ..
+                   (stats.hunger or 100) .. ", " .. "`thirst` = " .. (stats.thirst or 100) .. ", " .. "`hygiene` = " ..
+                   (stats.hygiene or 100) .. ", " .. "`affection` = " .. (stats.affection or 100) .. " " ..
+                   "WHERE `identifier` = '" .. identifier .. "'")
 end)
 
 -------------------------------- 
@@ -124,9 +162,7 @@ RegisterNetEvent("delete:pet", function()
     end
 
     local deleted = ExecuteSql("DELETE FROM `dp_petshop` WHERE `identifier` = '" .. identifier .. "'")
-    if deleted then
-        notify(src, "Mascota liberada con éxito", 'success')
-    else
+    if not deleted then
         notify(src, "No se pudo liberar a la mascota", 'error')
     end
 end)
@@ -144,7 +180,14 @@ RegisterNetEvent("pet:control", function()
 
     local result = ExecuteSql("SELECT * FROM `dp_petshop` WHERE `identifier` = '" .. identifier .. "'")
     if result and #result > 0 then
-        TriggerClientEvent("pet:cl:control", src, true, result[1].pet_code)
+        TriggerClientEvent("pet:cl:control", src, true, {
+            pet_code = result[1].pet_code,
+            health = result[1].health,
+            hunger = result[1].hunger,
+            thirst = result[1].thirst,
+            hygiene = result[1].hygiene,
+            affection = result[1].affection
+        })
     else
         notify(src, "No tienes mascota", 'error')
     end

@@ -1,3 +1,5 @@
+let currentCategory = null;
+
 $(document).ready(function () {
   // Asegurarse de que todo está oculto al cargar
   $(".main-menu, .pets-list, .purchase-view, .controls").hide();
@@ -30,12 +32,12 @@ $(document).ready(function () {
 
       case "add-pet":
         const html = `
-          <div class="item">
-            <div class="item-text">${event.data.name}</div>
-            <div class="item-img" style="background-image: url('./img/${event.data.img}');"></div>
-            <div class="prew-but" onclick="pew(${event.data.id}, '${event.data.price}')">
-              <i class="fas fa-eye"></i> MOSTRAR MASCOTA
-            </div>
+          <div class="item" data-category="${event.data.cattegory}">
+              <div class="item-text">${event.data.name}</div>
+              <div class="item-img" style="background-image: url('./img/${event.data.img}');"></div>
+              <div class="prew-but" onclick="pew(${event.data.id}, '${event.data.price}')">
+                  <i class="fas fa-eye"></i> MOSTRAR MASCOTA
+              </div>
           </div>
         `;
         $('#kutucuk').prepend(html);
@@ -130,17 +132,31 @@ function back() {
 }
 
 function box1() {
+  currentCategory = "dog";
   $.post('http://DP-PetsShop/box-menu', JSON.stringify({}));
   $(".main-menu").css("display", "none");
   $('#kutucuk').empty();
   $(".pets-list").css("display", "flex");
-  $("#category-title").text("PERROS");
+  $("#category-title").text("PET SHOPS");
+  $("#search-input").val(""); // Limpiar el buscador al cambiar de categoría
 }
 
 function box2() {
+  currentCategory = "others";
   $.post('http://DP-PetsShop/box-menu2', JSON.stringify({}));
   $(".main-menu").css("display", "none");
   $('#kutucuk').empty();
   $(".pets-list").css("display", "flex");
-  $("#category-title").text("GATOS");
+  $("#category-title").text("PET SHOPS");
+  $("#search-input").val(""); // Limpiar el buscador al cambiar de categoría
+}
+
+// Función para filtrar mascotas
+function filterPets() {
+  const searchTerm = $("#search-input").val().toLowerCase();
+  $(".item").each(function () {
+    const petName = $(this).find(".item-text").text().toLowerCase();
+    // Mostrar solo si coincide con la búsqueda y pertenece a la categoría actual
+    $(this).toggle(petName.includes(searchTerm));
+  });
 }
