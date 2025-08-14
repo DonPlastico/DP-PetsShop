@@ -50,26 +50,32 @@ body {
     background: var(--primary-color);
 }
 
-/* Menú Principal */
 .main-menu,
 .pets-list,
-.purchase-view,
 .pet-menu {
-    display: none;
-    position: absolute;
-    width: 80vw;
-    max-width: 900px;
-    height: 80vh;
-    max-height: 700px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: var(--bg-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
     overflow: hidden;
+    position: absolute;
+    display: none;
+    opacity: 100%;
+    transition: all 0.2s ease;
+    color: var(--primary-color);
+    background: var(--bg-color);
+    opacity: 0.90;
+    border: .5px solid var(--border-color);
+    border-radius: 5px 0 0 5px;
+    box-shadow: 0 0 .8vh black;
+    font-family: 'Arial', sans-serif;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    height: 80vh;
+    max-height: 80vh;
+    width: 30%;
     flex-direction: column;
+    transform-origin: right center;
+    box-sizing: border-box;
     z-index: 100;
+    padding: 10px;
 }
 
 .main-menu {
@@ -81,7 +87,6 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
     color: var(--primary-color);
     border-bottom: 1px solid var(--border-color);
 }
@@ -250,17 +255,14 @@ body {
     font-weight: 600;
 }
 
-/* Lista de Mascotas */
 .pets-list .header {
-    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
     border-bottom: 1px solid var(--border-color);
 }
 
 .search-box {
-    padding: 15px 20px;
+    padding: 15px;
     position: relative;
-    background: var(--bg-color);
-    border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
 }
 
 .search-box input {
@@ -290,19 +292,19 @@ body {
 
 .pets-container {
     flex: 1;
-    padding: 20px;
+    padding: 10px;
     overflow-y: auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 2fr));
+    gap: 10px;
 }
 
-/* Items de mascotas dinámicos */
 .item {
     background: rgba(255, 255, 255, 0.05);
     border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    height: 200px;
+    box-shadow: rgb(0 0 0 / 10%) 0px 3px 10px;
     transition: var(--transition);
     display: flex;
     flex-direction: column;
@@ -317,7 +319,7 @@ body {
 
 .item-text {
     padding: 10px;
-    font-size: 0.9rem;
+    font-size: 1.2rem;
     font-weight: 500;
     color: var(--primary-color);
     text-align: center;
@@ -325,7 +327,7 @@ body {
 
 .item-img {
     height: 120px;
-    background-size: contain;
+    background-size: 90px;
     background-position: center;
     background-repeat: no-repeat;
     margin: 0 auto;
@@ -349,11 +351,29 @@ body {
     background: var(--secondary-color);
 }
 
-/* Vista de Compra */
 .purchase-view {
+    overflow: hidden;
+    position: absolute;
+    display: none;
+    opacity: 100%;
+    transition: all 0.2s ease;
+    color: var(--primary-color);
     background: var(--bg-color);
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
+    opacity: 0.90;
+    border: .5px solid var(--border-color);
+    border-radius: 5px 0 0 5px;
+    box-shadow: 0 0 .8vh black;
+    font-family: 'Arial', sans-serif;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+    height: auto;
+    width: 30%;
+    flex-direction: column;
+    transform-origin: right center;
+    box-sizing: border-box;
+    z-index: 100;
+    padding: 10px;
 }
 
 .pet-display {
@@ -466,6 +486,7 @@ body {
     border-radius: var(--border-radius);
     font-size: 1rem;
     font-weight: 600;
+    gap: 15px;
     cursor: pointer;
     transition: var(--transition);
 }
@@ -474,72 +495,51 @@ body {
     background: rgba(255, 0, 0, 0.2);
 }
 
-/* Menú de Mascota */
-.pet-menu {
-    width: 400px;
-    max-width: 90%;
-    height: auto;
-    max-height: 90%;
-}
-
-.pet-menu-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    background: linear-gradient(135deg, var(--bg-color), rgba(0, 0, 0, 0.8));
-    color: var(--primary-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.pet-menu-header h2 {
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.pet-options {
-    padding: 20px;
-    background: var(--bg-color);
-}
-
-.pet-option {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: var(--border-radius);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-    cursor: pointer;
-    transition: var(--transition);
-    gap: 15px;
-    border: 1px solid var(--border-color);
-}
-
-.pet-option:hover {
-    transform: translateX(5px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    background: var(--hover-color);
-}
-
-.pet-option i {
+.cancel-btn i {
     color: var(--primary-color);
     font-size: 1.2rem;
     width: 25px;
     text-align: center;
 }
 
-.pet-option span {
+.cancel-btn span {
     flex: 1;
     color: var(--primary-color);
 }
 
-.delete-option {
-    border-left: 4px solid var(--hover2-color);
+.zoom-instructions,
+.rotation-instructions {
+    text-align: center;
+    justify-content: center;
+    color: var(--secondary-color);
+    padding: 0 0 0 5px;
+    margin: 312px 0;
 }
 
-.delete-option i {
-    color: rgba(255, 0, 0, 0.5);
+.zoom-instructions p,
+.rotation-instructions p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 10px;
+    opacity: 100%;
+    transition: all 0.2s ease;
+    color: var(--primary-color);
+    background: var(--bg-color);
+    opacity: 0.90;
+    border: .5px solid var(--border-color);
+    border-radius: 3px;
+    box-shadow: 0 0 .8vh black;
+    font-family: 'Arial', sans-serif;
+    font-size: 12px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    font-weight: bolder;
+}
+
+.zoom-instructions svg,
+.rotation-instructions svg {
+    margin: 0;
 }
